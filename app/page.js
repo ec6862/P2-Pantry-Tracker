@@ -3,7 +3,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import { firestore } from "@/firebase";
 import { Box, Typography } from "@mui/material"
-import { query } from "firebase/firestore";
+import { collection, deleteDoc, doc, getDoc, getDocs, query } from "firebase/firestore";
 
 export default function Home() {
   const [inventory, setInventory] = useState([]);
@@ -22,7 +22,38 @@ const updateInventory = async () => {
     })
   })
   setInventory(inventoryList)
+  console.log(inventoryList)
 }
+
+const addItems = async (item) => {
+  const docRef = doc(collection(firestore, "inventory"), item)
+  const docSnap = await getDocs(docRef)
+
+  if (docSnap.exists()) {
+    const {count} = docSnap.data()
+    await setDoc(docRef, {count: count + 1})
+  } else {
+    await setDoc(docRef, {count: 1})
+  }
+}
+
+const removeItems = async (item) => {
+  const docRef = doc(collection(firestore, "inventory"), item)
+  const docSnap = await getDoc(docRef)
+
+  if (docSnap.exists()) {
+    const {count} = docSnap.data()
+    if (count === 1) {
+      await deleteDocs(docRef)
+    } else {
+      await setDoc(docRef, {count: count - 1})
+    }
+  }
+  await updateInventory()
+}
+
+const handleOpen = () => setOpen(true)
+const handleClose = () => setOpen(false)
 
 useEffect(() => {
   updateInventory();
