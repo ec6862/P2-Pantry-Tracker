@@ -1,5 +1,4 @@
 'use client'
-import Image from "next/image";
 import { useState, useEffect } from "react";
 import { firestore } from "@/firebase";
 import { Box, Modal, Typography, Stack, TextField, Button } from "@mui/material"
@@ -9,55 +8,69 @@ export default function Home() {
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState("");
+  const [search, setSearch] = useState("");
+  const [displayList, setDisplayList] = useState([]);
+  const [searching, setSearching] = useState(false);
 
-const updateInventory = async () => {
-  const snapshot = query(collection(firestore, "inventory"))
-  const docs = await getDocs(snapshot)
-  const inventoryList = []
+  const updateInventory = async () => {
+    const snapshot = query(collection(firestore, "inventory"));
+    const docs = await getDocs(snapshot);
+    const inventoryList = [];
 
-  docs.forEach((doc) => { // fetches the data; for each doc, pushes the name and data into inventoryList
-    inventoryList.push({
-      name: doc.id,
-      ...doc.data(),
-    })
-  })
-  setInventory(inventoryList)
-  console.log(inventoryList)
-}
+    docs.forEach((doc) => {
+      // fetches the data; for each doc, pushes the name and data into inventoryList
+      inventoryList.push({
+        name: doc.id,
+        ...doc.data(),
+      });
+    });
+    setInventory(inventoryList);
+  };
 
-const addItems = async (item) => {
-  const docRef = doc(collection(firestore, "inventory"), item);
-  const docSnap = await getDoc(docRef);
-
-  if (docSnap.exists()) {
-    const { count } = docSnap.data();
-    await setDoc(docRef, { count: count + 1 });
-  } else {
-    await setDoc(docRef, { count: 1 });
-  }
-};
-
-const removeItems = async (item) => {
-  const docRef = doc(collection(firestore, "inventory"), item)
-  const docSnap = await getDoc(docRef)
-
-  if (docSnap.exists()) {
-    const {count} = docSnap.data()
-    if (count === 1) {
-      await deleteDoc(docRef)
-    } else {
-      await setDoc(docRef, {count: count - 1})
+  const searchItems = (items) => {
+    setSearching(true);
+    if (items !== "") {
+      const filteredData = inventory.filter((item) =>  
+        item.name.toLowerCase().includes(items.toLowerCase())
+      );
+      setInventory(filteredData)
     }
   }
-  await updateInventory()
-}
 
-const handleOpen = () => setOpen(true)
-const handleClose = () => setOpen(false)
+  const addItems = async (item) => {
+    const docRef = doc(collection(firestore, "inventory"), item);
+    const docSnap = await getDoc(docRef);
 
-useEffect(() => {
-  updateInventory();
-}, [addItems, removeItems])
+    if (docSnap.exists()) {
+      const { count } = docSnap.data();
+      await setDoc(docRef, { count: count + 1 });
+    } else {
+      await setDoc(docRef, { count: 1 });
+    }
+    await updateInventory();
+  };
+
+  const removeItems = async (item) => {
+    const docRef = doc(collection(firestore, "inventory"), item);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      const { count } = docSnap.data();
+      if (count === 1) {
+        await deleteDoc(docRef);
+      } else {
+        await setDoc(docRef, { count: count - 1 });
+      }
+    }
+    await updateInventory();
+  };
+
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+
+  useEffect(() => {
+    updateInventory();
+  }, []);
 
   return (
     <Box
@@ -68,7 +81,9 @@ useEffect(() => {
       alignItems="center"
       gap={2}
       flexDirection="column"
+      bgcolor=""
     >
+      {/* Add Item box POPUP */}
       <Modal open={open} onClose={handleClose}>
         <Box
           position="absolute"
@@ -108,23 +123,28 @@ useEffect(() => {
           </Stack>
         </Box>
       </Modal>
-      {/* <Typography variant="h1">Inventory Management</Typography>
-      {inventory.forEach((item) => {
-        return (
-          <>
-            {item.name}
-            {item.count}
-          </>
-        )
-      })} */}
-      <Button
-        variant="contained"
-        onClick={() => {
-          handleOpen();
-        }}
-      >
-        Add New Item
-      </Button>
+      <Stack direction="row" spacing={2}>
+        {/* SEARCH BAR */}
+        <TextField
+          variant="outlined"
+          onChange={(e) => {
+            setSearch(e.target.value);
+          }}
+        />
+        <Button variant="contained" onClick={() => searchItems(search)}>
+          Search
+        </Button>
+        {/* Add Item button */}
+        <Button
+          variant="contained"
+          onClick={() => {
+            handleOpen();
+          }}
+        >
+          Add New Item
+        </Button>
+      </Stack>
+      {/* Inventory container box */}
       <Box border="1px solid #333">
         <Box
           width="800px"
@@ -156,14 +176,24 @@ useEffect(() => {
               <Typography variant="h3" color="#333" textAlign="center">
                 {count}
               </Typography>
-              <Button
-                variant="contained"
-                onClick={() => {
-                  removeItems(name);
-                }}
-              >
-                Remove
-              </Button>
+              <Stack direction="row" spacing={2}>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    addItems(name);
+                  }}
+                >
+                  Add
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => {
+                    removeItems(name);
+                  }}
+                >
+                  Remove
+                </Button>
+              </Stack>
             </Box>
           ))}
         </Stack>
