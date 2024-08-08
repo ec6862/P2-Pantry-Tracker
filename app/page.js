@@ -8,7 +8,7 @@ export default function Home() {
   const [inventory, setInventory] = useState([]);
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState("");
-  const [search, setSearch] = useState("");
+  const [display, setDisplay] = useState([]);
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, "inventory"));
@@ -30,9 +30,9 @@ export default function Home() {
       const filteredData = inventory.filter((item) =>  
         item.name.toLowerCase().includes(items.toLowerCase())
       );
-      setInventory(filteredData)
+      setDisplay(filteredData)
     } else {
-      updateInventory();
+      setDisplay(inventory)
     }
   }
 
@@ -70,7 +70,7 @@ export default function Home() {
 
     if (docSnap.exists())
       await deleteDoc(docRef);
-    
+
     await updateInventory();
   }
 
@@ -80,6 +80,10 @@ export default function Home() {
   useEffect(() => {
     updateInventory();
   }, []);
+
+  useEffect(() => {
+    setDisplay(inventory)
+  }, [inventory])
 
   return (
     <Box
@@ -136,13 +140,11 @@ export default function Home() {
         {/* SEARCH BAR */}
         <TextField
           variant="outlined"
+          placeholder="Search..."
           onChange={(e) => {
-            setSearch(e.target.value);
+            searchItems(e.target.value);
           }}
         />
-        <Button variant="contained" onClick={() => searchItems(search)}>
-          Search
-        </Button>
         {/* Add Item button */}
         <Button
           variant="contained"
@@ -168,46 +170,49 @@ export default function Home() {
           </Typography>
         </Box>
         <Stack width="800px" height="300px" spacing={2} overflow="auto">
-          {inventory.map(({ name, count }) => (
-            <Box
-              key={name}
-              width="100%"
-              minHeight="150px"
-              display="flex"
-              alignItems="center"
-              justifyContent="space-between"
-              bgcolor="#f0f0f0"
-              padding={5}
-            >
-              <Typography variant="h3" color="#333" textAlign="center">
-                {name.charAt(0).toUpperCase() + name.slice(1)}
-              </Typography>
-              <Typography variant="h3" color="#333" textAlign="center">
-                {count}
-              </Typography>
-              <Stack direction="row" spacing={2}>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    addItems(name);
-                  }}
-                >
-                  Add
-                </Button>
-                <Button
-                  variant="contained"
-                  onClick={() => {
-                    removeItems(name);
-                  }}
-                >
-                  Remove
-                </Button>
-                <Button variant="contained" onClick={() => deleteAll(name)}>
-                  Remove All
-                </Button>
-              </Stack>
-            </Box>
-          ))}
+          {display.map(({ name, count }) => {
+            return (
+              // need this return function, otherwise the itemToDisplay function will not return anything
+              <Box
+                key={name}
+                width="100%"
+                minHeight="150px"
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
+                bgcolor="#f0f0f0"
+                padding={5}
+              >
+                <Typography variant="h3" color="#333" textAlign="center">
+                  {name.charAt(0).toUpperCase() + name.slice(1)}
+                </Typography>
+                <Typography variant="h3" color="#333" textAlign="center">
+                  {count}
+                </Typography>
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      addItems(name);
+                    }}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      removeItems(name);
+                    }}
+                  >
+                    Remove
+                  </Button>
+                  <Button variant="contained" onClick={() => deleteAll(name)}>
+                    Remove All
+                  </Button>
+                </Stack>
+              </Box>
+            );
+          })}
         </Stack>
       </Box>
     </Box>
