@@ -9,8 +9,6 @@ export default function Home() {
   const [open, setOpen] = useState(false);
   const [itemName, setItemName] = useState("");
   const [search, setSearch] = useState("");
-  const [displayList, setDisplayList] = useState([]);
-  const [searching, setSearching] = useState(false);
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, "inventory"));
@@ -28,12 +26,13 @@ export default function Home() {
   };
 
   const searchItems = (items) => {
-    setSearching(true);
     if (items !== "") {
       const filteredData = inventory.filter((item) =>  
         item.name.toLowerCase().includes(items.toLowerCase())
       );
       setInventory(filteredData)
+    } else {
+      updateInventory();
     }
   }
 
@@ -64,6 +63,16 @@ export default function Home() {
     }
     await updateInventory();
   };
+
+  const deleteAll = async (item) => {
+    const docRef = doc(collection(firestore, "inventory"), item);
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists())
+      await deleteDoc(docRef);
+    
+    await updateInventory();
+  }
 
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -192,6 +201,9 @@ export default function Home() {
                   }}
                 >
                   Remove
+                </Button>
+                <Button variant="contained" onClick={() => deleteAll(name)}>
+                  Remove All
                 </Button>
               </Stack>
             </Box>
